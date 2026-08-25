@@ -10,6 +10,7 @@
 		1EB076A58EB18A8620E02FCA /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B1CB57C64769807D3579345 /* AppDelegate.swift */; };
 		27EB4DEA3F876F704515C00A /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5B42328489F192174541FB0 /* main.swift */; };
 		2D77FFE2CCD8E45360C1CD85 /* PowerPulseWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B09D1E79873955C3AD103AD /* PowerPulseWidget.swift */; };
+		4ED2454D99CAAD26E804292F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 25C2C83F21334C2B02B5AB15 /* Assets.xcassets */; };
 		A07559B653CA1B1BE5F4CE8F /* PowerTelemetry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12770E4FCAE7CDF790B5F8D3 /* PowerTelemetry.swift */; };
 		AB865F5A72E1D674C762F797 /* PowerPulseWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 7EC0C08C1F9BCC8CA243CB4C /* PowerPulseWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		F2F3BBF5799A4AB1259E1952 /* PowerTelemetry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12770E4FCAE7CDF790B5F8D3 /* PowerTelemetry.swift */; };
@@ -43,6 +44,7 @@
 		12770E4FCAE7CDF790B5F8D3 /* PowerTelemetry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PowerTelemetry.swift; sourceTree = "<group>"; };
 		1B09D1E79873955C3AD103AD /* PowerPulseWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PowerPulseWidget.swift; sourceTree = "<group>"; };
 		1B1CB57C64769807D3579345 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		25C2C83F21334C2B02B5AB15 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		725D77194E1939DBBEFCEF96 /* PowerPulse.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PowerPulse.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7EC0C08C1F9BCC8CA243CB4C /* PowerPulseWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = PowerPulseWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		C990241C52C078C96447EEAA /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
@@ -50,9 +52,18 @@
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
+		1DA6D30EB2E56031967FD2E0 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				25C2C83F21334C2B02B5AB15 /* Assets.xcassets */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
 		2F4D25DC1B4EEB5E8F197C6B = {
 			isa = PBXGroup;
 			children = (
+				1DA6D30EB2E56031967FD2E0 /* App */,
 				A647AEA67CD7A6807A051846 /* PowerPulse */,
 				332C415A381A14EAB402CC96 /* PowerPulseWidget */,
 				B3478CE2AEBF3A7DC3E2AED1 /* Products */,
@@ -96,6 +107,7 @@
 			buildConfigurationList = B7887E47B50587159C25030F /* Build configuration list for PBXNativeTarget "PowerPulse" */;
 			buildPhases = (
 				0B472B36B280A79CE8827363 /* Sources */,
+				F725EDE66FC069143959D00A /* Resources */,
 				AFD842F98AF5F2F0BE8A3DB2 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
@@ -165,6 +177,17 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		F725EDE66FC069143959D00A /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4ED2454D99CAAD26E804292F /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		0B472B36B280A79CE8827363 /* Sources */ = {

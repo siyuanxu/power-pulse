@@ -1,6 +1,18 @@
 # Power Pulse
 
+<p align="center">
+  <img src="App/Assets.xcassets/AppIcon.appiconset/icon_512x512@2x.png" width="128" alt="Power Pulse app icon">
+</p>
+
 Power Pulse 是一个 macOS 原生供电监控工具，包含真正的 WidgetKit 桌面小组件和实时菜单栏读数。桌面组件使用系统网格占位，Finder 桌面文件不会与它重叠；菜单栏通过 IOKit 每 5 秒读取一次本机功率。
+
+## 界面
+
+<p align="center">
+  <img src="docs/power-pulse-widget.png" width="360" alt="Power Pulse desktop widget showing live Mac power telemetry">
+</p>
+
+截图由 Power Pulse 使用当前机器的真实 IOKit 遥测生成；功率、电量、电压和电流会随机器状态变化。
 
 ## 最终方案
 
