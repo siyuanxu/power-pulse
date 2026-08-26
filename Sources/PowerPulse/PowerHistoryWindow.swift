@@ -54,7 +54,7 @@ struct PowerHistoryView: View {
         VStack(alignment: .leading, spacing: 16) {
             header
             summaryCards
-            chart
+            charts
             footer
         }
         .padding(20)
@@ -78,7 +78,7 @@ struct PowerHistoryView: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text("功率记录")
                     .font(.system(size: 24, weight: .bold, design: .rounded))
-                Text("外部输入、整机功耗、电池净功率与区间平均")
+                Text("功率、电池电量与区间平均")
                     .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(.secondary)
             }
@@ -102,7 +102,7 @@ struct PowerHistoryView: View {
         }
     }
 
-    private var chart: some View {
+    private var charts: some View {
         Group {
             if chartSamples.isEmpty {
                 ContentUnavailableView(
@@ -111,74 +111,24 @@ struct PowerHistoryView: View {
                     description: Text("保持 Power Pulse 运行，曲线会每 5 秒增加一个采样点。")
                 )
             } else {
-                Chart {
-                    RuleMark(y: .value("零线", 0))
-                        .foregroundStyle(.white.opacity(0.16))
+                VStack(alignment: .leading, spacing: 10) {
+                    powerChart
 
-                    if let average = averageSystemLoadW {
-                        RuleMark(y: .value("平均功耗", average))
-                            .foregroundStyle(Color(red: 0.35, green: 0.9, blue: 0.62).opacity(0.9))
-                            .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [8, 4]))
-                            .annotation(position: .top, alignment: .trailing) {
-                                Text(String(format: "平均 %.1f W", average))
-                                    .font(.system(size: 10, weight: .semibold, design: .rounded))
-                                    .monospacedDigit()
-                                    .foregroundStyle(Color(red: 0.35, green: 0.9, blue: 0.62))
-                                    .padding(.horizontal, 7)
-                                    .padding(.vertical, 3)
-                                    .background(.black.opacity(0.58), in: Capsule())
-                            }
+                    Divider().overlay(.white.opacity(0.08))
+
+                    HStack {
+                        Text("电池电量")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                        Text(latest?.batteryPercent.map { "\($0)%" } ?? "—")
+                            .font(.system(size: 13, weight: .bold, design: .rounded))
+                            .monospacedDigit()
+                            .foregroundStyle(.purple)
                     }
 
-                    ForEach(chartSamples) { sample in
-                        if let value = sample.inputPowerW {
-                            LineMark(
-                                x: .value("时间", sample.recordedAt),
-                                y: .value("功率", value),
-                                series: .value("指标", "外部输入")
-                            )
-                            .foregroundStyle(by: .value("指标", "外部输入"))
-                            .lineStyle(StrokeStyle(lineWidth: 2))
-                        }
-                        if let value = sample.systemLoadW {
-                            LineMark(
-                                x: .value("时间", sample.recordedAt),
-                                y: .value("功率", value),
-                                series: .value("指标", "整机功耗")
-                            )
-                            .foregroundStyle(by: .value("指标", "整机功耗"))
-                            .lineStyle(StrokeStyle(lineWidth: 2))
-                        }
-                        if let value = sample.batteryPowerW {
-                            LineMark(
-                                x: .value("时间", sample.recordedAt),
-                                y: .value("功率", value),
-                                series: .value("指标", "电池净功率")
-                            )
-                            .foregroundStyle(by: .value("指标", "电池净功率"))
-                            .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [5, 3]))
-                        }
-                    }
+                    batteryChart
                 }
-                .chartForegroundStyleScale([
-                    "外部输入": Color.cyan,
-                    "整机功耗": Color(red: 0.25, green: 0.64, blue: 1.0),
-                    "电池净功率": Color.orange
-                ])
-                .chartLegend(position: .bottom, alignment: .leading, spacing: 16)
-                .chartXAxis {
-                    AxisMarks(values: .automatic(desiredCount: 6)) {
-                        AxisGridLine().foregroundStyle(.white.opacity(0.08))
-                        AxisValueLabel(format: .dateTime.hour().minute())
-                    }
-                }
-                .chartYAxis {
-                    AxisMarks(position: .leading) {
-                        AxisGridLine().foregroundStyle(.white.opacity(0.08))
-                        AxisValueLabel()
-                    }
-                }
-                .frame(minHeight: 250)
             }
         }
         .padding(14)
@@ -187,6 +137,120 @@ struct PowerHistoryView: View {
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .stroke(.cyan.opacity(0.12), lineWidth: 1)
         }
+    }
+
+    private var powerChart: some View {
+        Chart {
+            RuleMark(y: .value("零线", 0))
+                .foregroundStyle(.white.opacity(0.16))
+
+            if let average = averageSystemLoadW {
+                RuleMark(y: .value("平均功耗", average))
+                    .foregroundStyle(Color(red: 0.35, green: 0.9, blue: 0.62).opacity(0.9))
+                    .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [8, 4]))
+                    .annotation(position: .top, alignment: .trailing) {
+                        Text(String(format: "平均 %.1f W", average))
+                            .font(.system(size: 10, weight: .semibold, design: .rounded))
+                            .monospacedDigit()
+                            .foregroundStyle(Color(red: 0.35, green: 0.9, blue: 0.62))
+                            .padding(.horizontal, 7)
+                            .padding(.vertical, 3)
+                            .background(.black.opacity(0.58), in: Capsule())
+                    }
+            }
+
+            ForEach(chartSamples) { sample in
+                if let value = sample.inputPowerW {
+                    LineMark(
+                        x: .value("时间", sample.recordedAt),
+                        y: .value("功率", value),
+                        series: .value("指标", "外部输入")
+                    )
+                    .foregroundStyle(by: .value("指标", "外部输入"))
+                    .lineStyle(StrokeStyle(lineWidth: 2))
+                }
+                if let value = sample.systemLoadW {
+                    LineMark(
+                        x: .value("时间", sample.recordedAt),
+                        y: .value("功率", value),
+                        series: .value("指标", "整机功耗")
+                    )
+                    .foregroundStyle(by: .value("指标", "整机功耗"))
+                    .lineStyle(StrokeStyle(lineWidth: 2))
+                }
+                if let value = sample.batteryPowerW {
+                    LineMark(
+                        x: .value("时间", sample.recordedAt),
+                        y: .value("功率", value),
+                        series: .value("指标", "电池净功率")
+                    )
+                    .foregroundStyle(by: .value("指标", "电池净功率"))
+                    .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [5, 3]))
+                }
+            }
+        }
+        .chartForegroundStyleScale([
+            "外部输入": Color.cyan,
+            "整机功耗": Color(red: 0.25, green: 0.64, blue: 1.0),
+            "电池净功率": Color.orange
+        ])
+        .chartLegend(position: .bottom, alignment: .leading, spacing: 16)
+        .chartXAxis {
+            AxisMarks(values: .automatic(desiredCount: 6)) {
+                AxisGridLine().foregroundStyle(.white.opacity(0.08))
+                AxisValueLabel(format: .dateTime.hour().minute())
+            }
+        }
+        .chartYAxis {
+            AxisMarks(position: .leading) {
+                AxisGridLine().foregroundStyle(.white.opacity(0.08))
+                AxisValueLabel()
+            }
+        }
+        .frame(minHeight: 220)
+    }
+
+    private var batteryChart: some View {
+        Chart {
+            ForEach(chartSamples) { sample in
+                if let percent = sample.batteryPercent {
+                    AreaMark(
+                        x: .value("时间", sample.recordedAt),
+                        y: .value("电量", percent)
+                    )
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [.purple.opacity(0.32), .purple.opacity(0.03)],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+
+                    LineMark(
+                        x: .value("时间", sample.recordedAt),
+                        y: .value("电量", percent)
+                    )
+                    .foregroundStyle(.purple)
+                    .lineStyle(StrokeStyle(lineWidth: 2))
+                }
+            }
+        }
+        .chartYScale(domain: 0...100)
+        .chartXAxis {
+            AxisMarks(values: .automatic(desiredCount: 6)) {
+                AxisGridLine().foregroundStyle(.white.opacity(0.06))
+                AxisValueLabel(format: .dateTime.hour().minute())
+            }
+        }
+        .chartYAxis {
+            AxisMarks(position: .leading, values: [0, 50, 100]) { value in
+                AxisGridLine().foregroundStyle(.white.opacity(0.06))
+                if let percent = value.as(Int.self) {
+                    AxisValueLabel { Text("\(percent)%") }
+                }
+            }
+        }
+        .frame(height: 110)
     }
 
     private var footer: some View {
@@ -227,8 +291,8 @@ final class PowerHistoryWindowController: NSWindowController {
         let window = NSWindow(contentViewController: hostingController)
         window.title = "Power Pulse · 功率记录"
         window.styleMask = [.titled, .closable, .miniaturizable, .resizable]
-        window.setContentSize(NSSize(width: 780, height: 520))
-        window.minSize = NSSize(width: 720, height: 450)
+        window.setContentSize(NSSize(width: 780, height: 650))
+        window.minSize = NSSize(width: 720, height: 560)
         window.isReleasedWhenClosed = false
         window.center()
         super.init(window: window)
