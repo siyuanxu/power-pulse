@@ -4,9 +4,11 @@ import WidgetKit
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private let reader = PowerReader()
+    private let historyStore = PowerHistoryStore()
     private var statusItem: NSStatusItem!
     private var timer: Timer?
     private var pausedItem: NSMenuItem!
+    private var historyWindowController: PowerHistoryWindowController?
     private var isPaused = false
     private var lastWidgetReload = Date.distantPast
     private var lastPowerForWidget: Double?
@@ -16,6 +18,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         NSApp.setActivationPolicy(.accessory)
         makeStatusItem()
         refresh()
+        if CommandLine.arguments.contains("--show-history") {
+            DispatchQueue.main.async { [weak self] in self?.showPowerHistory() }
+        }
         timer = Timer.scheduledTimer(
             timeInterval: 5.0,
             target: self,
@@ -28,6 +33,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     func applicationWillTerminate(_ notification: Notification) {
         timer?.invalidate()
+        historyStore.flush()
     }
 
     private func makeStatusItem() {
@@ -38,10 +44,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
         let menu = NSMenu()
         menu.delegate = self
+        let historyItem = NSMenuItem(title: "打开功率曲线…", action: #selector(showPowerHistory), keyEquivalent: "g")
+        historyItem.target = self
         let helpItem = NSMenuItem(title: "如何添加桌面小组件…", action: #selector(showWidgetHelp), keyEquivalent: "")
         helpItem.target = self
         pausedItem = NSMenuItem(title: "暂停菜单栏刷新", action: #selector(togglePaused), keyEquivalent: "")
         pausedItem.target = self
+        menu.addItem(historyItem)
+        menu.addItem(.separator())
         menu.addItem(helpItem)
         menu.addItem(pausedItem)
         menu.addItem(.separator())
@@ -66,6 +76,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         NSApp.setActivationPolicy(.accessory)
     }
 
+    @objc private func showPowerHistory() {
+        if historyWindowController == nil {
+            historyWindowController = PowerHistoryWindowController(store: historyStore)
+        }
+        historyWindowController?.present()
+    }
+
     @objc private func togglePaused() {
         isPaused.toggle()
         pausedItem.state = isPaused ? .on : .off
@@ -81,19 +98,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     private func refresh() {
-        guard !isPaused else { return }
         do {
             let snapshot = try reader.read()
-            if let power = snapshot.displayPowerW {
-                let icon = snapshot.externalConnected ? "⚡" : "🔋"
-                statusItem.button?.title = String(format: "%@ %.1f W", icon, power)
-                statusItem.button?.toolTip = "Power Pulse · \(snapshot.displayPowerLabel)"
-            } else {
-                statusItem.button?.title = snapshot.externalConnected ? "⚡ — W" : "🔋 电池"
+            historyStore.record(snapshot)
+            if !isPaused {
+                if let power = snapshot.displayPowerW {
+                    let icon = snapshot.externalConnected ? "⚡" : "🔋"
+                    statusItem.button?.title = String(format: "%@ %.1f W", icon, power)
+                    statusItem.button?.toolTip = "Power Pulse · \(snapshot.displayPowerLabel)"
+                } else {
+                    statusItem.button?.title = snapshot.externalConnected ? "⚡ — W" : "🔋 电池"
+                }
             }
             requestWidgetRefreshIfNeeded(snapshot: snapshot)
         } catch {
-            statusItem.button?.title = "⚡ 读取失败"
+            if !isPaused { statusItem.button?.title = "⚡ 读取失败" }
         }
     }
 

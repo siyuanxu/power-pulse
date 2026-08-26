@@ -67,15 +67,19 @@ final class PowerReader {
         let charging = bool(properties["IsCharging"]) ?? false
         let full = bool(properties["FullyCharged"]) ?? false
 
-        let systemPowerMW = signedNumber(telemetry?["SystemPowerIn"])
-        let systemLoadMW = signedNumber(telemetry?["SystemLoad"])
-        let batteryPowerMW = signedNumber(telemetry?["BatteryPower"])
-        let voltageMV = signedNumber(telemetry?["SystemVoltageIn"])
-        let currentMA = signedNumber(telemetry?["SystemCurrentIn"])
-        let batteryVoltageMV = signedNumber(properties["Voltage"])
-            ?? signedNumber(properties["AppleRawBatteryVoltage"])
-        let batteryCurrentMA = signedNumber(properties["InstantAmperage"])
+        let systemPowerMW = signedNumber(telemetry?["SystemPowerIn"]).map(abs)
+        let systemLoadMW = signedNumber(telemetry?["SystemLoad"]).map(abs)
+        let rawBatteryPowerMW = signedNumber(telemetry?["BatteryPower"])
+        let batteryPowerMW = rawBatteryPowerMW.map { connected ? $0 : -abs($0) }
+        let voltageMV = signedNumber(telemetry?["SystemVoltageIn"]).map(abs)
+        let currentMA = signedNumber(telemetry?["SystemCurrentIn"]).map(abs)
+        let batteryVoltageMV = (
+            signedNumber(properties["Voltage"])
+                ?? signedNumber(properties["AppleRawBatteryVoltage"])
+        ).map(abs)
+        let rawBatteryCurrentMA = signedNumber(properties["InstantAmperage"])
             ?? signedNumber(properties["Amperage"])
+        let batteryCurrentMA = rawBatteryCurrentMA.map { connected ? $0 : -abs($0) }
 
         let reliableBatteryPowerMW: Double? = {
             guard let batteryPowerMW else { return nil }

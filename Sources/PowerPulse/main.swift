@@ -9,7 +9,9 @@ if CommandLine.arguments.contains("--diagnose") {
             return String(format: "%.*f", decimals, number)
         }
         print("Power Pulse 本机诊断")
+        print("当前主功率: \(value.displayPowerLabel) · \(show(value.displayPowerW)) W")
         print("Mac 侧输入: \(show(value.inputPowerW)) W")
+        print("整机功耗: \(show(value.systemLoadW)) W")
         print("实时参数: \(show(value.inputVoltageV)) V / \(show(value.inputCurrentA)) A")
         print("充电器额定: \(show(value.ratedPowerW, decimals: 0)) W")
         print("协议: \(value.protocolName) · \(value.contractDescription ?? "合约未知")")

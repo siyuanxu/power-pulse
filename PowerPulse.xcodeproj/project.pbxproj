@@ -11,6 +11,8 @@
 		27EB4DEA3F876F704515C00A /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5B42328489F192174541FB0 /* main.swift */; };
 		2D77FFE2CCD8E45360C1CD85 /* PowerPulseWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B09D1E79873955C3AD103AD /* PowerPulseWidget.swift */; };
 		4ED2454D99CAAD26E804292F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 25C2C83F21334C2B02B5AB15 /* Assets.xcassets */; };
+		66E1A0924D9644A70463AD33 /* PowerHistoryWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 166F3337820F391D41FFB638 /* PowerHistoryWindow.swift */; };
+		68BFB4BA8E23EECBD6664366 /* PowerHistory.swift in Sources */ = {isa = PBXBuildFile; fileRef = B306B602BF92CA0D34222977 /* PowerHistory.swift */; };
 		A07559B653CA1B1BE5F4CE8F /* PowerTelemetry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12770E4FCAE7CDF790B5F8D3 /* PowerTelemetry.swift */; };
 		AB865F5A72E1D674C762F797 /* PowerPulseWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 7EC0C08C1F9BCC8CA243CB4C /* PowerPulseWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		F2F3BBF5799A4AB1259E1952 /* PowerTelemetry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12770E4FCAE7CDF790B5F8D3 /* PowerTelemetry.swift */; };
@@ -42,11 +44,13 @@
 
 /* Begin PBXFileReference section */
 		12770E4FCAE7CDF790B5F8D3 /* PowerTelemetry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PowerTelemetry.swift; sourceTree = "<group>"; };
+		166F3337820F391D41FFB638 /* PowerHistoryWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PowerHistoryWindow.swift; sourceTree = "<group>"; };
 		1B09D1E79873955C3AD103AD /* PowerPulseWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PowerPulseWidget.swift; sourceTree = "<group>"; };
 		1B1CB57C64769807D3579345 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		25C2C83F21334C2B02B5AB15 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		725D77194E1939DBBEFCEF96 /* PowerPulse.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PowerPulse.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7EC0C08C1F9BCC8CA243CB4C /* PowerPulseWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = PowerPulseWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		B306B602BF92CA0D34222977 /* PowerHistory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PowerHistory.swift; sourceTree = "<group>"; };
 		C990241C52C078C96447EEAA /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		F5B42328489F192174541FB0 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -84,6 +88,8 @@
 			children = (
 				1B1CB57C64769807D3579345 /* AppDelegate.swift */,
 				F5B42328489F192174541FB0 /* main.swift */,
+				B306B602BF92CA0D34222977 /* PowerHistory.swift */,
+				166F3337820F391D41FFB638 /* PowerHistoryWindow.swift */,
 				12770E4FCAE7CDF790B5F8D3 /* PowerTelemetry.swift */,
 			);
 			name = PowerPulse;
@@ -195,6 +201,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				1EB076A58EB18A8620E02FCA /* AppDelegate.swift in Sources */,
+				68BFB4BA8E23EECBD6664366 /* PowerHistory.swift in Sources */,
+				66E1A0924D9644A70463AD33 /* PowerHistoryWindow.swift in Sources */,
 				F2F3BBF5799A4AB1259E1952 /* PowerTelemetry.swift in Sources */,
 				27EB4DEA3F876F704515C00A /* main.swift in Sources */,
 			);
