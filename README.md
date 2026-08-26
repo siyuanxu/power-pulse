@@ -4,21 +4,38 @@
   <img src="App/Assets.xcassets/AppIcon.appiconset/icon_512x512@2x.png" width="128" alt="Power Pulse app icon">
 </p>
 
-Power Pulse 是一个 macOS 原生供电监控工具，包含真正的 WidgetKit 桌面小组件和实时菜单栏读数。接通电源时显示 Mac 侧输入功率，使用电池时自动切换为电脑实时总功耗。桌面组件使用系统网格占位，Finder 桌面文件不会与它重叠；菜单栏通过 IOKit 每 5 秒读取一次本机功率。
+Power Pulse 是一个 macOS 原生供电监控工具，包含真正的 WidgetKit 桌面小组件、实时菜单栏读数和最近 24 小时的功率历史。接通电源时显示 Mac 侧输入功率，使用电池时自动切换为电脑实时总功耗。桌面组件使用系统网格占位，Finder 桌面文件不会与它重叠；菜单栏通过 IOKit 每 5 秒读取并记录一次本机功率与电量。
+
+## 主要功能
+
+- 真正的 WidgetKit 桌面小组件：占用系统组件网格，不置顶，也不覆盖 Finder 桌面文件。
+- 菜单栏实时读数：接电显示 Mac 侧输入功率，电池供电显示整机功耗。
+- 供电详情：额定功率、USB-C PD 合约、电压、电流、电量和电池净功率。
+- 历史曲线：同步记录外部输入、整机功耗、电池净功率与电量百分比，保留最近 24 小时。
+- 区间统计：显示平均功耗和平均每小时耗电百分比，支持 15 分钟、1 小时、6 小时、24 小时及自定义窗口。
+- 完全本地运行：不需要 sudo、网络账户或后台上传。
 
 ## 界面
+
+### 桌面小组件
 
 <p align="center">
   <img src="docs/power-pulse-widget.png" width="360" alt="Power Pulse desktop widget showing live Mac power telemetry">
 </p>
 
-截图由 Power Pulse 使用当前机器的真实 IOKit 遥测生成；功率、电量、电压和电流会随机器状态变化。
+### 功率与电量历史
 
-## 最终方案
+<p align="center">
+  <img src="docs/power-pulse-history.png" width="780" alt="Power Pulse power and battery history with averages and a custom time range">
+</p>
+
+截图均由 Power Pulse 使用当前机器的真实 IOKit 遥测生成；功率、电量、电压和电流会随机器状态变化。
+
+## 实现方式与取舍
 
 - WidgetKit 提供真正的桌面占位、拖放和系统编辑体验，但刷新频率由 macOS 调度，不能保证秒级更新。
 - 菜单栏由宿主 App 每 5 秒读取一次 IOKit：接电显示输入功率，电池供电显示整机负载。
-- 菜单栏中的“打开功率曲线…”提供最近 15 分钟、1 小时、6 小时和 24 小时记录，区分外部输入、整机功耗与电池净功率。
+- 菜单栏中的“打开功率曲线…”记录功率和电池电量，提供区间平均、自定义 1 分钟至 24 小时窗口与最近 24 小时本地历史。
 - 不再使用自定义桌面窗口，因此不会置顶，也不会与 Finder 文件争抢位置。
 - 运行时不需要 Homebrew、Node、sudo 或网络。
 
