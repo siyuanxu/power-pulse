@@ -50,6 +50,27 @@ struct PowerHistoryView: View {
         return values.reduce(0, +) / Double(values.count)
     }
 
+    private var averageBatteryDrainPercentPerHour: Double? {
+        guard filteredSamples.count >= 2 else { return nil }
+
+        var netPercentDrop = 0.0
+        var dischargeDuration: TimeInterval = 0
+
+        for (previous, current) in zip(filteredSamples, filteredSamples.dropFirst()) {
+            let interval = current.recordedAt.timeIntervalSince(previous.recordedAt)
+            guard interval > 0, interval <= 30,
+                  !previous.externalConnected, !current.externalConnected,
+                  let previousPercent = previous.batteryPercent,
+                  let currentPercent = current.batteryPercent else { continue }
+
+            netPercentDrop += Double(previousPercent - currentPercent)
+            dischargeDuration += interval
+        }
+
+        guard dischargeDuration >= 5 * 60 else { return nil }
+        return max(0, netPercentDrop / (dischargeDuration / 3_600))
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             header
@@ -121,6 +142,20 @@ struct PowerHistoryView: View {
                             .font(.system(size: 11, weight: .semibold))
                             .foregroundStyle(.secondary)
                         Spacer()
+
+                        Text("平均耗电")
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundStyle(.secondary)
+                        Text(averageBatteryDrainPercentPerHour.map { String(format: "%.1f%%/h", $0) } ?? "— %/h")
+                            .font(.system(size: 12, weight: .bold, design: .rounded))
+                            .monospacedDigit()
+                            .foregroundStyle(.pink)
+                            .help("仅统计当前时间范围内的电池供电时段；充电时段不计入。")
+
+                        Divider()
+                            .frame(height: 16)
+                            .overlay(.white.opacity(0.12))
+
                         Text(latest?.batteryPercent.map { "\($0)%" } ?? "—")
                             .font(.system(size: 13, weight: .bold, design: .rounded))
                             .monospacedDigit()
