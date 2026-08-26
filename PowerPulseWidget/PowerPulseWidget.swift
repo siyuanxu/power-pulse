@@ -50,14 +50,14 @@ struct PowerPulseWidgetView: View {
                     .foregroundStyle(.cyan)
             }
 
-            Text("MAC 侧实时输入")
+            Text(snapshot?.displayPowerLabel ?? "实时功率")
                 .font(.system(size: 9, weight: .semibold))
                 .foregroundStyle(.white.opacity(0.55))
 
             Divider().overlay(Color.cyan.opacity(0.25))
 
             HStack {
-                compactMetric("额定", ratedText)
+                compactMetric(snapshot?.externalConnected == false ? "状态" : "额定", ratedText)
                 Spacer()
                 compactMetric("电量", batteryText)
             }
@@ -101,11 +101,12 @@ struct PowerPulseWidgetView: View {
     }
 
     private var powerText: String {
-        snapshot?.inputPowerW.map { String(format: "%.1f", $0) } ?? "—"
+        snapshot?.displayPowerW.map { String(format: "%.1f", $0) } ?? "—"
     }
 
     private var ratedText: String {
-        snapshot?.ratedPowerW.map { String(format: "%.0f W", $0) } ?? "—"
+        if snapshot?.externalConnected == false { return "电池供电" }
+        return snapshot?.ratedPowerW.map { String(format: "%.0f W", $0) } ?? "—"
     }
 
     private var batteryText: String {
@@ -113,11 +114,17 @@ struct PowerPulseWidgetView: View {
     }
 
     private var voltageText: String {
-        snapshot?.inputVoltageV.map { String(format: "%.1f V", $0) } ?? "—"
+        let voltage = snapshot?.externalConnected == false
+            ? snapshot?.batteryVoltageV
+            : snapshot?.inputVoltageV
+        return voltage.map { String(format: "%.1f V", $0) } ?? "—"
     }
 
     private var currentText: String {
-        snapshot?.inputCurrentA.map { String(format: "%.2f A", $0) } ?? "—"
+        if snapshot?.externalConnected == false {
+            return snapshot?.batteryCurrentA.map { String(format: "%+.2f A", $0) } ?? "—"
+        }
+        return snapshot?.inputCurrentA.map { String(format: "%.2f A", $0) } ?? "—"
     }
 
     private var netBatteryText: String {

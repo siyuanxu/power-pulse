@@ -5,8 +5,11 @@ import IOKit.ps
 struct PowerSnapshot {
     let readAt: Date
     let inputPowerW: Double?
+    let systemLoadW: Double?
     let inputVoltageV: Double?
     let inputCurrentA: Double?
+    let batteryVoltageV: Double?
+    let batteryCurrentA: Double?
     let ratedPowerW: Double?
     let batteryPowerW: Double?
     let batteryPercent: Int?
@@ -16,6 +19,15 @@ struct PowerSnapshot {
     let protocolName: String
     let contractDescription: String?
     let telemetryAvailable: Bool
+
+    var displayPowerW: Double? {
+        if externalConnected { return inputPowerW }
+        return systemLoadW ?? batteryPowerW.map(abs)
+    }
+
+    var displayPowerLabel: String {
+        externalConnected ? "MAC 侧实时输入" : "电脑实时总功耗"
+    }
 
     var stateText: String {
         if !externalConnected { return "电池供电" }
@@ -60,6 +72,10 @@ final class PowerReader {
         let batteryPowerMW = signedNumber(telemetry?["BatteryPower"])
         let voltageMV = signedNumber(telemetry?["SystemVoltageIn"])
         let currentMA = signedNumber(telemetry?["SystemCurrentIn"])
+        let batteryVoltageMV = signedNumber(properties["Voltage"])
+            ?? signedNumber(properties["AppleRawBatteryVoltage"])
+        let batteryCurrentMA = signedNumber(properties["InstantAmperage"])
+            ?? signedNumber(properties["Amperage"])
 
         let reliableBatteryPowerMW: Double? = {
             guard let batteryPowerMW else { return nil }
@@ -80,12 +96,18 @@ final class PowerReader {
             guard let v = contractVoltageMV, let a = contractCurrentMA else { return nil }
             return String(format: "合约 %.0f V / %.1f A", v / 1_000, a / 1_000)
         }()
+        let hasDisplayTelemetry = connected
+            ? systemPowerMW != nil
+            : (systemLoadMW != nil || reliableBatteryPowerMW != nil)
 
         return PowerSnapshot(
             readAt: Date(),
             inputPowerW: connected ? systemPowerMW.map { $0 / 1_000 } : nil,
+            systemLoadW: systemLoadMW.map { $0 / 1_000 },
             inputVoltageV: connected ? voltageMV.map { $0 / 1_000 } : nil,
             inputCurrentA: connected ? currentMA.map { $0 / 1_000 } : nil,
+            batteryVoltageV: batteryVoltageMV.map { $0 / 1_000 },
+            batteryCurrentA: batteryCurrentMA.map { $0 / 1_000 },
             ratedPowerW: connected ? ratedPower : nil,
             batteryPowerW: reliableBatteryPowerMW.map { $0 / 1_000 },
             batteryPercent: signedNumber(properties["CurrentCapacity"]).map { Int($0.rounded()) },
@@ -94,7 +116,7 @@ final class PowerReader {
             isFullyCharged: full,
             protocolName: connected ? (isPD ? "USB-C PD" : "外接电源") : "未连接",
             contractDescription: connected ? contract : nil,
-            telemetryAvailable: connected && telemetry != nil && systemPowerMW != nil
+            telemetryAvailable: telemetry != nil && hasDisplayTelemetry
         )
     }
 

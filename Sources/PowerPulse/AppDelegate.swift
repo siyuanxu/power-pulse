@@ -10,6 +10,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var isPaused = false
     private var lastWidgetReload = Date.distantPast
     private var lastPowerForWidget: Double?
+    private var lastExternalConnectedForWidget: Bool?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
@@ -33,7 +34,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         statusItem.button?.title = "⚡ — W"
         statusItem.button?.font = NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .semibold)
-        statusItem.button?.toolTip = "Power Pulse · Mac 侧实时输入功率"
+        statusItem.button?.toolTip = "Power Pulse · 实时供电与系统功耗"
 
         let menu = NSMenu()
         menu.delegate = self
@@ -83,26 +84,31 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         guard !isPaused else { return }
         do {
             let snapshot = try reader.read()
-            if let power = snapshot.inputPowerW {
-                statusItem.button?.title = String(format: "⚡ %.1f W", power)
+            if let power = snapshot.displayPowerW {
+                let icon = snapshot.externalConnected ? "⚡" : "🔋"
+                statusItem.button?.title = String(format: "%@ %.1f W", icon, power)
+                statusItem.button?.toolTip = "Power Pulse · \(snapshot.displayPowerLabel)"
             } else {
                 statusItem.button?.title = snapshot.externalConnected ? "⚡ — W" : "🔋 电池"
             }
-            requestWidgetRefreshIfNeeded(power: snapshot.inputPowerW)
+            requestWidgetRefreshIfNeeded(snapshot: snapshot)
         } catch {
             statusItem.button?.title = "⚡ 读取失败"
         }
     }
 
-    private func requestWidgetRefreshIfNeeded(power: Double?) {
-        let changedEnough: Bool
+    private func requestWidgetRefreshIfNeeded(snapshot: PowerSnapshot) {
+        let power = snapshot.displayPowerW
+        let powerChangedEnough: Bool
         if let power, let previous = lastPowerForWidget {
-            changedEnough = abs(power - previous) >= 1.0
+            powerChangedEnough = abs(power - previous) >= 1.0
         } else {
-            changedEnough = power != nil || lastPowerForWidget != nil
+            powerChangedEnough = power != nil || lastPowerForWidget != nil
         }
-        guard changedEnough, Date().timeIntervalSince(lastWidgetReload) >= 60 else { return }
+        let sourceChanged = lastExternalConnectedForWidget != snapshot.externalConnected
+        guard (powerChangedEnough || sourceChanged), Date().timeIntervalSince(lastWidgetReload) >= 60 else { return }
         lastPowerForWidget = power
+        lastExternalConnectedForWidget = snapshot.externalConnected
         lastWidgetReload = Date()
         WidgetCenter.shared.reloadTimelines(ofKind: "PowerPulseWidget")
     }

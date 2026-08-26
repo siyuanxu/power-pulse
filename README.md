@@ -4,7 +4,7 @@
   <img src="App/Assets.xcassets/AppIcon.appiconset/icon_512x512@2x.png" width="128" alt="Power Pulse app icon">
 </p>
 
-Power Pulse 是一个 macOS 原生供电监控工具，包含真正的 WidgetKit 桌面小组件和实时菜单栏读数。桌面组件使用系统网格占位，Finder 桌面文件不会与它重叠；菜单栏通过 IOKit 每 5 秒读取一次本机功率。
+Power Pulse 是一个 macOS 原生供电监控工具，包含真正的 WidgetKit 桌面小组件和实时菜单栏读数。接通电源时显示 Mac 侧输入功率，使用电池时自动切换为电脑实时总功耗。桌面组件使用系统网格占位，Finder 桌面文件不会与它重叠；菜单栏通过 IOKit 每 5 秒读取一次本机功率。
 
 ## 界面
 
@@ -17,7 +17,7 @@ Power Pulse 是一个 macOS 原生供电监控工具，包含真正的 WidgetKit
 ## 最终方案
 
 - WidgetKit 提供真正的桌面占位、拖放和系统编辑体验，但刷新频率由 macOS 调度，不能保证秒级更新。
-- 菜单栏由宿主 App 每 5 秒读取一次 IOKit，继续承担实时瓦数显示。
+- 菜单栏由宿主 App 每 5 秒读取一次 IOKit：接电显示输入功率，电池供电显示整机负载。
 - 不再使用自定义桌面窗口，因此不会置顶，也不会与 Finder 文件争抢位置。
 - 运行时不需要 Homebrew、Node、sudo 或网络。
 
@@ -34,6 +34,7 @@ open "dist/Power Pulse.app"
 ## 指标边界
 
 - “Mac 侧实时输入”来自私有 IOKit 字段 `PowerTelemetryData.SystemPowerIn`，单位由 `V × A` 与功率值交叉校验。
+- “电脑实时总功耗”来自私有 IOKit 字段 `PowerTelemetryData.SystemLoad`；电池模式下再与 `BatteryPower` 的绝对值交叉核验。
 - “电池净功率”来自私有遥测 `BatteryPower`，并用同一批样本的 `SystemPowerIn − SystemLoad` 做一致性检查；正值表示净充入、负值表示电池正在补充系统负载，不一致时显示为不可用。它是 Mac 内部遥测，不等同于外置电池分析仪的计量值。
 - 额定功率优先来自公开 API `IOPSCopyExternalPowerAdapterDetails()`。
 - 协议只显示本机能可靠确认的 `USB-C PD` 与当前合约档位，不臆测具体 PD 修订版。
