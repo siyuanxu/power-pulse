@@ -40,7 +40,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         statusItem.button?.title = "⚡ — W"
         statusItem.button?.font = NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .semibold)
-        statusItem.button?.toolTip = "Power Pulse · 实时供电与系统功耗"
+        statusItem.button?.toolTip = "Power Pulse · 实时供电与电脑用电"
 
         let menu = NSMenu()
         menu.delegate = self

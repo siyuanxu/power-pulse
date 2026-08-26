@@ -69,8 +69,8 @@ struct PowerHistoryView: View {
 
     private var latest: PowerHistorySample? { store.samples.last }
 
-    private var averageSystemLoadW: Double? {
-        let values = filteredSamples.compactMap(\.systemLoadW)
+    private var averageComputerPowerW: Double? {
+        let values = filteredSamples.compactMap(\.computerPowerW)
         guard !values.isEmpty else { return nil }
         return values.reduce(0, +) / Double(values.count)
     }
@@ -96,10 +96,58 @@ struct PowerHistoryView: View {
         return max(0, netPercentDrop / (dischargeDuration / 3_600))
     }
 
+    private var batteryFlowTitle: String {
+        guard let sample = latest else { return "电池功率" }
+        guard sample.externalConnected else { return "电池供电" }
+        guard let power = sample.batteryPowerW else { return "电池功率" }
+        if power > 0.5 { return "电池正在充电" }
+        if power < -0.5 { return "电池正在放电" }
+        return "电池待机"
+    }
+
+    private var batteryFlowValue: Double? {
+        latest?.batteryPowerW.map(abs)
+    }
+
+    private var batteryFlowColor: Color {
+        guard let sample = latest, let power = sample.batteryPowerW else { return .secondary }
+        if sample.externalConnected, power > 0.5 { return Color(red: 0.35, green: 0.9, blue: 0.62) }
+        return .orange
+    }
+
+    private var powerFlowText: String {
+        guard let sample = latest else { return "正在等待功率数据" }
+
+        if !sample.externalConnected {
+            let batteryOutput = sample.batteryPowerW.map(abs) ?? sample.computerPowerW
+            if let batteryOutput, let load = sample.computerPowerW {
+                return "当前：电脑约用 \(formatWatts(load))；电池放电约 \(formatWatts(batteryOutput))"
+            }
+            return "当前由电池供电"
+        }
+
+        guard let input = sample.inputPowerW, let load = sample.computerPowerW else {
+            return "已接电源，正在等待完整功率数据"
+        }
+
+        if let batteryPower = sample.batteryPowerW, batteryPower > 0.5 {
+            return "当前：电脑约用 \(formatWatts(load))；电池充电约 \(formatWatts(batteryPower))；适配器向 Mac 输入 \(formatWatts(input))"
+        }
+        if let batteryPower = sample.batteryPowerW, batteryPower < -0.5 {
+            return "当前：电脑约用 \(formatWatts(load))；电池同时放电约 \(formatWatts(batteryPower))；适配器输入 \(formatWatts(input))"
+        }
+        return "当前：电脑约用 \(formatWatts(load))；适配器向 Mac 输入 \(formatWatts(input))"
+    }
+
+    private func formatWatts(_ value: Double) -> String {
+        String(format: "%.1f W", abs(value))
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             header
             summaryCards
+            powerFlowSummary
             charts
             footer
         }
@@ -179,10 +227,31 @@ struct PowerHistoryView: View {
 
     private var summaryCards: some View {
         HStack(spacing: 10) {
-            metricCard("外部输入", latest?.inputPowerW, color: .cyan)
-            metricCard("整机功耗", latest?.systemLoadW, color: Color(red: 0.25, green: 0.64, blue: 1.0))
-            metricCard("电池净功率", latest?.batteryPowerW, signed: true, color: .orange)
-            metricCard("平均功耗", averageSystemLoadW, color: Color(red: 0.35, green: 0.9, blue: 0.62))
+            metricCard("适配器→Mac 输入", latest?.inputPowerW, color: .cyan)
+            metricCard("电脑实时用电", latest?.computerPowerW, color: Color(red: 0.25, green: 0.64, blue: 1.0))
+            metricCard(batteryFlowTitle, batteryFlowValue, color: batteryFlowColor)
+            metricCard("区间平均用电", averageComputerPowerW, color: Color(red: 0.35, green: 0.9, blue: 0.62))
+        }
+    }
+
+    private var powerFlowSummary: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "arrow.triangle.branch")
+                .foregroundStyle(batteryFlowColor)
+            Text(powerFlowText)
+                .monospacedDigit()
+                .foregroundStyle(.white.opacity(0.88))
+            Spacer(minLength: 8)
+            Text("内部传感器估算 · 0 上方充电 · 0 下方放电")
+                .foregroundStyle(.secondary)
+        }
+        .font(.system(size: 11, weight: .semibold))
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(.white.opacity(0.045), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .stroke(batteryFlowColor.opacity(0.16), lineWidth: 1)
         }
     }
 
@@ -242,8 +311,8 @@ struct PowerHistoryView: View {
             RuleMark(y: .value("零线", 0))
                 .foregroundStyle(.white.opacity(0.16))
 
-            if let average = averageSystemLoadW {
-                RuleMark(y: .value("平均功耗", average))
+            if let average = averageComputerPowerW {
+                RuleMark(y: .value("平均用电", average))
                     .foregroundStyle(Color(red: 0.35, green: 0.9, blue: 0.62).opacity(0.9))
                     .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [8, 4]))
                     .annotation(position: .top, alignment: .trailing) {
@@ -267,30 +336,30 @@ struct PowerHistoryView: View {
                     .foregroundStyle(by: .value("指标", "外部输入"))
                     .lineStyle(StrokeStyle(lineWidth: 2))
                 }
-                if let value = sample.systemLoadW {
+                if let value = sample.computerPowerW {
                     LineMark(
                         x: .value("时间", sample.recordedAt),
                         y: .value("功率", value),
-                        series: .value("指标", "整机功耗")
+                        series: .value("指标", "电脑用电")
                     )
-                    .foregroundStyle(by: .value("指标", "整机功耗"))
+                    .foregroundStyle(by: .value("指标", "电脑用电"))
                     .lineStyle(StrokeStyle(lineWidth: 2))
                 }
                 if let value = sample.batteryPowerW {
                     LineMark(
                         x: .value("时间", sample.recordedAt),
                         y: .value("功率", value),
-                        series: .value("指标", "电池净功率")
+                        series: .value("指标", "电池功率")
                     )
-                    .foregroundStyle(by: .value("指标", "电池净功率"))
+                    .foregroundStyle(by: .value("指标", "电池功率"))
                     .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [5, 3]))
                 }
             }
         }
         .chartForegroundStyleScale([
             "外部输入": Color.cyan,
-            "整机功耗": Color(red: 0.25, green: 0.64, blue: 1.0),
-            "电池净功率": Color.orange
+            "电脑用电": Color(red: 0.25, green: 0.64, blue: 1.0),
+            "电池功率": Color.orange
         ])
         .chartLegend(position: .bottom, alignment: .leading, spacing: 16)
         .chartXAxis {

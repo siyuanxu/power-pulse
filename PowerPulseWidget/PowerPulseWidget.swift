@@ -128,8 +128,11 @@ struct PowerPulseWidgetView: View {
     }
 
     private var netBatteryText: String {
-        guard let power = snapshot?.batteryPowerW else { return "净 — W" }
-        return String(format: "净 %+.1f W", power)
+        guard let power = snapshot?.batteryPowerW else { return "电池 — W" }
+        if abs(power) < 0.5 { return "电池待机" }
+        return power > 0
+            ? String(format: "充电 %.1f W", power)
+            : String(format: "放电 %.1f W", abs(power))
     }
 }
 

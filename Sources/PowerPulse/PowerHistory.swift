@@ -4,46 +4,51 @@ import Foundation
 struct PowerHistorySample: Codable, Identifiable {
     let recordedAt: Date
     let inputPowerW: Double?
-    let systemLoadW: Double?
+    let computerPowerW: Double?
     let batteryPowerW: Double?
     let batteryPercent: Int?
     let externalConnected: Bool
+    let measurementVersion: Int?
 
     var id: Date { recordedAt }
 
     init(snapshot: PowerSnapshot) {
         recordedAt = snapshot.readAt
         inputPowerW = snapshot.inputPowerW
-        systemLoadW = snapshot.systemLoadW
+        computerPowerW = snapshot.computerPowerW
         batteryPowerW = snapshot.batteryPowerW
         batteryPercent = snapshot.batteryPercent
         externalConnected = snapshot.externalConnected
+        measurementVersion = 2
     }
 
     private init(
         recordedAt: Date,
         inputPowerW: Double?,
-        systemLoadW: Double?,
+        computerPowerW: Double?,
         batteryPowerW: Double?,
         batteryPercent: Int?,
-        externalConnected: Bool
+        externalConnected: Bool,
+        measurementVersion: Int?
     ) {
         self.recordedAt = recordedAt
         self.inputPowerW = inputPowerW
-        self.systemLoadW = systemLoadW
+        self.computerPowerW = computerPowerW
         self.batteryPowerW = batteryPowerW
         self.batteryPercent = batteryPercent
         self.externalConnected = externalConnected
+        self.measurementVersion = measurementVersion
     }
 
     var normalized: PowerHistorySample {
         PowerHistorySample(
             recordedAt: recordedAt,
-            inputPowerW: inputPowerW.map(abs),
-            systemLoadW: systemLoadW.map(abs),
-            batteryPowerW: batteryPowerW.map { externalConnected ? $0 : -abs($0) },
+            inputPowerW: measurementVersion == 2 ? inputPowerW.map(abs) : nil,
+            computerPowerW: measurementVersion == 2 ? computerPowerW.map(abs) : nil,
+            batteryPowerW: measurementVersion == 2 ? batteryPowerW.map { externalConnected ? $0 : -abs($0) } : nil,
             batteryPercent: batteryPercent,
-            externalConnected: externalConnected
+            externalConnected: externalConnected,
+            measurementVersion: measurementVersion
         )
     }
 }

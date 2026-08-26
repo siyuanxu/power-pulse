@@ -5,7 +5,7 @@ import IOKit.ps
 struct PowerSnapshot {
     let readAt: Date
     let inputPowerW: Double?
-    let systemLoadW: Double?
+    let computerPowerW: Double?
     let inputVoltageV: Double?
     let inputCurrentA: Double?
     let batteryVoltageV: Double?
@@ -22,18 +22,18 @@ struct PowerSnapshot {
 
     var displayPowerW: Double? {
         if externalConnected { return inputPowerW }
-        return systemLoadW ?? batteryPowerW.map(abs)
+        return computerPowerW ?? batteryPowerW.map(abs)
     }
 
     var displayPowerLabel: String {
-        externalConnected ? "MAC 侧实时输入" : "电脑实时总功耗"
+        externalConnected ? "适配器→Mac 输入" : "电脑实时用电"
     }
 
     var stateText: String {
         if !externalConnected { return "电池供电" }
         if isFullyCharged { return "已充满" }
         if let batteryPowerW, batteryPowerW > 0.3 { return "电池充电中" }
-        if let batteryPowerW, batteryPowerW < -0.3 { return "电池补充供电" }
+        if let batteryPowerW, batteryPowerW < -0.3 { return "电池放电中" }
         if isCharging { return "充电待机" }
         return "已连接 · 未充电"
     }
@@ -68,9 +68,7 @@ final class PowerReader {
         let full = bool(properties["FullyCharged"]) ?? false
 
         let systemPowerMW = signedNumber(telemetry?["SystemPowerIn"]).map(abs)
-        let systemLoadMW = signedNumber(telemetry?["SystemLoad"]).map(abs)
-        let rawBatteryPowerMW = signedNumber(telemetry?["BatteryPower"])
-        let batteryPowerMW = rawBatteryPowerMW.map { connected ? $0 : -abs($0) }
+        let measuredSystemConsumptionMW = signedNumber(telemetry?["SystemEnergyConsumed"]).map(abs)
         let voltageMV = signedNumber(telemetry?["SystemVoltageIn"]).map(abs)
         let currentMA = signedNumber(telemetry?["SystemCurrentIn"]).map(abs)
         let batteryVoltageMV = (
@@ -80,13 +78,18 @@ final class PowerReader {
         let rawBatteryCurrentMA = signedNumber(properties["InstantAmperage"])
             ?? signedNumber(properties["Amperage"])
         let batteryCurrentMA = rawBatteryCurrentMA.map { connected ? $0 : -abs($0) }
-
-        let reliableBatteryPowerMW: Double? = {
-            guard let batteryPowerMW else { return nil }
-            guard let systemPowerMW, let systemLoadMW else { return batteryPowerMW }
-            let balancePower = systemPowerMW - systemLoadMW
-            let tolerance = max(300, abs(systemPowerMW) * 0.03)
-            return abs(batteryPowerMW - balancePower) <= tolerance ? batteryPowerMW : nil
+        let measuredBatteryPowerMW: Double? = {
+            guard let voltage = batteryVoltageMV, let current = batteryCurrentMA else { return nil }
+            let power = voltage * current / 1_000
+            guard power.isFinite, abs(power) <= 250_000 else { return nil }
+            return power
+        }()
+        let systemConsumptionMW: Double? = {
+            if let measuredSystemConsumptionMW { return measuredSystemConsumptionMW }
+            if connected, let input = systemPowerMW, let battery = measuredBatteryPowerMW {
+                return max(0, input - battery)
+            }
+            return measuredBatteryPowerMW.map(abs)
         }()
 
         let ratedPower = signedNumber(publicAdapter?[kIOPSPowerAdapterWattsKey as String])
@@ -102,18 +105,18 @@ final class PowerReader {
         }()
         let hasDisplayTelemetry = connected
             ? systemPowerMW != nil
-            : (systemLoadMW != nil || reliableBatteryPowerMW != nil)
+            : (systemConsumptionMW != nil || measuredBatteryPowerMW != nil)
 
         return PowerSnapshot(
             readAt: Date(),
             inputPowerW: connected ? systemPowerMW.map { $0 / 1_000 } : nil,
-            systemLoadW: systemLoadMW.map { $0 / 1_000 },
+            computerPowerW: systemConsumptionMW.map { $0 / 1_000 },
             inputVoltageV: connected ? voltageMV.map { $0 / 1_000 } : nil,
             inputCurrentA: connected ? currentMA.map { $0 / 1_000 } : nil,
             batteryVoltageV: batteryVoltageMV.map { $0 / 1_000 },
             batteryCurrentA: batteryCurrentMA.map { $0 / 1_000 },
             ratedPowerW: connected ? ratedPower : nil,
-            batteryPowerW: reliableBatteryPowerMW.map { $0 / 1_000 },
+            batteryPowerW: measuredBatteryPowerMW.map { $0 / 1_000 },
             batteryPercent: signedNumber(properties["CurrentCapacity"]).map { Int($0.rounded()) },
             externalConnected: connected,
             isCharging: charging,
