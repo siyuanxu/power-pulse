@@ -7,11 +7,13 @@ private enum HistoryRange: TimeInterval, CaseIterable, Identifiable {
     case oneHour = 3_600
     case sixHours = 21_600
     case oneDay = 86_400
+    case custom = -1
 
     var id: TimeInterval { rawValue }
 
     var title: String {
         switch self {
+        case .custom: "自定义"
         case .fifteenMinutes: "15 分钟"
         case .oneHour: "1 小时"
         case .sixHours: "6 小时"
@@ -20,12 +22,35 @@ private enum HistoryRange: TimeInterval, CaseIterable, Identifiable {
     }
 }
 
+private enum CustomRangeUnit: String, CaseIterable, Identifiable {
+    case minutes = "分钟"
+    case hours = "小时"
+
+    var id: String { rawValue }
+    var seconds: TimeInterval { self == .minutes ? 60 : 3_600 }
+}
+
 struct PowerHistoryView: View {
     @ObservedObject var store: PowerHistoryStore
     @State private var selectedRange: HistoryRange = .oneHour
+    @State private var customRangeValue = 2.0
+    @State private var customRangeUnit: CustomRangeUnit = .hours
+
+    private var selectedDuration: TimeInterval {
+        guard selectedRange == .custom else { return selectedRange.rawValue }
+        let value = customRangeValue.isFinite ? customRangeValue : 1
+        return min(24 * 60 * 60, max(60, value * customRangeUnit.seconds))
+    }
+
+    private func normalizedCustomRangeValue(_ value: Double, unit: CustomRangeUnit) -> Double {
+        let finiteValue = value.isFinite ? value : 1
+        let lowerBound = 60 / unit.seconds
+        let upperBound = (24 * 60 * 60) / unit.seconds
+        return min(upperBound, max(lowerBound, finiteValue))
+    }
 
     private var filteredSamples: [PowerHistorySample] {
-        let cutoff = Date().addingTimeInterval(-selectedRange.rawValue)
+        let cutoff = Date().addingTimeInterval(-selectedDuration)
         return store.samples.filter { $0.recordedAt >= cutoff }
     }
 
@@ -95,7 +120,7 @@ struct PowerHistoryView: View {
     }
 
     private var header: some View {
-        HStack(alignment: .firstTextBaseline) {
+        HStack(alignment: .top) {
             VStack(alignment: .leading, spacing: 3) {
                 Text("功率记录")
                     .font(.system(size: 24, weight: .bold, design: .rounded))
@@ -104,13 +129,51 @@ struct PowerHistoryView: View {
                     .foregroundStyle(.secondary)
             }
             Spacer()
-            Picker("时间范围", selection: $selectedRange) {
-                ForEach(HistoryRange.allCases) { range in
-                    Text(range.title).tag(range)
+
+            VStack(alignment: .trailing, spacing: 7) {
+                Picker("时间范围", selection: $selectedRange) {
+                    ForEach(HistoryRange.allCases) { range in
+                        Text(range.title).tag(range)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .frame(width: 370)
+
+                if selectedRange == .custom {
+                    HStack(spacing: 7) {
+                        Text("最近")
+                            .foregroundStyle(.secondary)
+
+                        TextField(
+                            "时长",
+                            value: $customRangeValue,
+                            format: .number.precision(.fractionLength(0...2))
+                        )
+                        .textFieldStyle(.roundedBorder)
+                        .multilineTextAlignment(.trailing)
+                        .frame(width: 72)
+                        .onSubmit {
+                            customRangeValue = normalizedCustomRangeValue(customRangeValue, unit: customRangeUnit)
+                        }
+
+                        Picker("单位", selection: $customRangeUnit) {
+                            ForEach(CustomRangeUnit.allCases) { unit in
+                                Text(unit.rawValue).tag(unit)
+                            }
+                        }
+                        .labelsHidden()
+                        .pickerStyle(.menu)
+                        .frame(width: 78)
+                        .onChange(of: customRangeUnit) { _, newUnit in
+                            customRangeValue = normalizedCustomRangeValue(customRangeValue, unit: newUnit)
+                        }
+
+                        Text("1 分钟–24 小时")
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundStyle(.tertiary)
+                    }
                 }
             }
-            .pickerStyle(.segmented)
-            .frame(width: 310)
         }
     }
 
