@@ -44,6 +44,12 @@ struct PowerHistoryView: View {
 
     private var latest: PowerHistorySample? { store.samples.last }
 
+    private var averageSystemLoadW: Double? {
+        let values = filteredSamples.compactMap(\.systemLoadW)
+        guard !values.isEmpty else { return nil }
+        return values.reduce(0, +) / Double(values.count)
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             header
@@ -72,7 +78,7 @@ struct PowerHistoryView: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text("功率记录")
                     .font(.system(size: 24, weight: .bold, design: .rounded))
-                Text("外部输入、整机功耗与电池净功率")
+                Text("外部输入、整机功耗、电池净功率与区间平均")
                     .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(.secondary)
             }
@@ -92,6 +98,7 @@ struct PowerHistoryView: View {
             metricCard("外部输入", latest?.inputPowerW, color: .cyan)
             metricCard("整机功耗", latest?.systemLoadW, color: Color(red: 0.25, green: 0.64, blue: 1.0))
             metricCard("电池净功率", latest?.batteryPowerW, signed: true, color: .orange)
+            metricCard("平均功耗", averageSystemLoadW, color: Color(red: 0.35, green: 0.9, blue: 0.62))
         }
     }
 
@@ -107,6 +114,21 @@ struct PowerHistoryView: View {
                 Chart {
                     RuleMark(y: .value("零线", 0))
                         .foregroundStyle(.white.opacity(0.16))
+
+                    if let average = averageSystemLoadW {
+                        RuleMark(y: .value("平均功耗", average))
+                            .foregroundStyle(Color(red: 0.35, green: 0.9, blue: 0.62).opacity(0.9))
+                            .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [8, 4]))
+                            .annotation(position: .top, alignment: .trailing) {
+                                Text(String(format: "平均 %.1f W", average))
+                                    .font(.system(size: 10, weight: .semibold, design: .rounded))
+                                    .monospacedDigit()
+                                    .foregroundStyle(Color(red: 0.35, green: 0.9, blue: 0.62))
+                                    .padding(.horizontal, 7)
+                                    .padding(.vertical, 3)
+                                    .background(.black.opacity(0.58), in: Capsule())
+                            }
+                    }
 
                     ForEach(chartSamples) { sample in
                         if let value = sample.inputPowerW {
