@@ -24,4 +24,15 @@ if [[ -d "$APP_DIR" ]]; then
 fi
 /usr/bin/ditto "$DERIVED_DIR/Build/Products/Release/Power Pulse.app" "$APP_DIR"
 
+WIDGET_BUNDLE="$APP_DIR/Contents/PlugIns/PowerPulseWidget.appex"
+WIDGET_PROCESS_PATTERN="$PROJECT_DIR/.*PowerPulseWidget.appex/Contents/MacOS/PowerPulseWidget"
+
+# WidgetKit may keep executing the binary from the app bundle that was moved to
+# .build/previous. Re-register the freshly built extension and stop that stale
+# process so chronod creates a new timeline with the current binary.
+if ! /usr/bin/pluginkit -a "$WIDGET_BUNDLE"; then
+  echo "Warning: WidgetKit extension registration failed; relaunch the app or log in again."
+fi
+/usr/bin/pkill -f "$WIDGET_PROCESS_PATTERN" 2>/dev/null || true
+
 echo "$APP_DIR"
