@@ -56,12 +56,12 @@ open "dist/Power Pulse.app"
 
 曲线复用菜单栏的 5 秒采样，不会额外轮询硬件；功率与电池电量百分比同步记录，自动保留最近 24 小时，跨应用重启继续记录。电量曲线的“平均耗电”按电池供电时段的净电量下降百分点除以时长计算，充电时段不计入。除 15 分钟、1 小时、6 小时和 24 小时预设外，也可自定义最近 1 分钟至 24 小时的窗口，所有曲线和平均指标会同步重算。
 
-历史数据保存在 App 沙盒的 `Library/Application Support/Power Pulse/power-history.jsonl`，不需要网络，也不会上传。1.7 之前按 `SystemLoad` 记录的功率样本不会参与新版功率曲线和平均值，原有电量百分比记录仍会保留。
+历史数据保存在 App 沙盒的 `Library/Application Support/Power Pulse/power-history.jsonl`，不需要网络，也不会上传。1.6 及更早版本按 `SystemLoad` 记录的功率样本不会参与新版功率曲线和平均值，原有电量百分比记录仍会保留；1.7 的电池供电样本会自动用电池放电功率修正。
 
 ## 指标边界
 
 - “适配器→Mac 输入”来自私有 IOKit 字段 `PowerTelemetryData.SystemPowerIn`，单位由输入电压 × 输入电流交叉校验。它包含电脑当时使用的电力和送往电池充电路径的电力。
-- “电脑实时用电”优先来自 `PowerTelemetryData.SystemEnergyConsumed`。尽管字段名含 `Energy`，本机连续样本与其累计值变化表明当前值以 mW 表示功率；因此这里仍标为内部遥测估算。
+- 接电时，“电脑实时用电”优先来自 `PowerTelemetryData.SystemEnergyConsumed`。尽管字段名含 `Energy`，本机连续样本与其累计值变化表明当前值以 mW 表示功率；因此这里仍标为内部遥测估算。电池供电时该字段在实机上为 0，程序改用下述电池放电功率，避免菜单栏误显示 `0.0 W`。
 - “电池功率”由电池端 `Voltage × (InstantAmperage / Amperage)` 计算；正值表示充电，负值表示放电。各传感器并非完全同步，适配器输入、电脑用电与电池功率可能有少量瞬时差额。
 - 私有字段 `PowerTelemetryData.SystemLoad` 不再作为“整机功耗”：在实机充电状态下它可明显大于适配器输入，并不符合可直接展示为当前电脑用电的口径。
 - 额定功率优先来自公开 API `IOPSCopyExternalPowerAdapterDetails()`。

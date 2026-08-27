@@ -21,8 +21,8 @@ targets:
       path: App/Info.plist
       properties:
         CFBundleDisplayName: Power Pulse
-        CFBundleShortVersionString: "1.7"
-        CFBundleVersion: "8"
+        CFBundleShortVersionString: "1.8"
+        CFBundleVersion: "9"
         LSUIElement: true
         NSHighResolutionCapable: true
     settings:
@@ -47,8 +47,8 @@ targets:
       path: PowerPulseWidget/Info.plist
       properties:
         CFBundleDisplayName: Power Pulse
-        CFBundleShortVersionString: "1.7"
-        CFBundleVersion: "8"
+        CFBundleShortVersionString: "1.8"
+        CFBundleVersion: "9"
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
     settings:

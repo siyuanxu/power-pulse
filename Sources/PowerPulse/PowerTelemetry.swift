@@ -85,11 +85,17 @@ final class PowerReader {
             return power
         }()
         let systemConsumptionMW: Double? = {
-            if let measuredSystemConsumptionMW { return measuredSystemConsumptionMW }
-            if connected, let input = systemPowerMW, let battery = measuredBatteryPowerMW {
+            if !connected {
+                return measuredBatteryPowerMW.map(abs)
+                    ?? measuredSystemConsumptionMW.flatMap { $0 > 0 ? $0 : nil }
+            }
+            if let measuredSystemConsumptionMW, measuredSystemConsumptionMW > 0 {
+                return measuredSystemConsumptionMW
+            }
+            if let input = systemPowerMW, let battery = measuredBatteryPowerMW {
                 return max(0, input - battery)
             }
-            return measuredBatteryPowerMW.map(abs)
+            return nil
         }()
 
         let ratedPower = signedNumber(publicAdapter?[kIOPSPowerAdapterWattsKey as String])

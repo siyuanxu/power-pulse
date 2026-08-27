@@ -19,7 +19,7 @@ struct PowerHistorySample: Codable, Identifiable {
         batteryPowerW = snapshot.batteryPowerW
         batteryPercent = snapshot.batteryPercent
         externalConnected = snapshot.externalConnected
-        measurementVersion = 2
+        measurementVersion = 3
     }
 
     private init(
@@ -41,14 +41,27 @@ struct PowerHistorySample: Codable, Identifiable {
     }
 
     var normalized: PowerHistorySample {
-        PowerHistorySample(
+        let normalizedComputerPowerW: Double? = {
+            if measurementVersion == 3 { return computerPowerW.map(abs) }
+            if measurementVersion == 2 {
+                if !externalConnected, (computerPowerW ?? 0) <= 0.05 {
+                    return batteryPowerW.map(abs)
+                }
+                return computerPowerW.map(abs)
+            }
+            return nil
+        }()
+
+        return PowerHistorySample(
             recordedAt: recordedAt,
-            inputPowerW: measurementVersion == 2 ? inputPowerW.map(abs) : nil,
-            computerPowerW: measurementVersion == 2 ? computerPowerW.map(abs) : nil,
-            batteryPowerW: measurementVersion == 2 ? batteryPowerW.map { externalConnected ? $0 : -abs($0) } : nil,
+            inputPowerW: measurementVersion == 2 || measurementVersion == 3 ? inputPowerW.map(abs) : nil,
+            computerPowerW: normalizedComputerPowerW,
+            batteryPowerW: measurementVersion == 2 || measurementVersion == 3
+                ? batteryPowerW.map { externalConnected ? $0 : -abs($0) }
+                : nil,
             batteryPercent: batteryPercent,
             externalConnected: externalConnected,
-            measurementVersion: measurementVersion
+            measurementVersion: measurementVersion == 2 ? 3 : measurementVersion
         )
     }
 }
